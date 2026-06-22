@@ -42,7 +42,7 @@ export function CompareTable({ results, comparePeriod }: { results: EntityResult
           <tbody>
             {results.map((r) => (
               <tr key={r.label} className="border-b border-gray-100 last:border-0 dark:border-white/5">
-                <td className="px-4 py-2.5 font-medium text-gray-900 dark:text-zinc-200">{r.label}</td>
+                <td className="whitespace-nowrap px-4 py-2.5 font-medium text-gray-900 dark:text-zinc-200">{r.label}</td>
                 {METRICS.map((m) => {
                   const curr = r.summary?.[m.key] ?? 0;
                   const prev = r.previousSummary?.[m.key];

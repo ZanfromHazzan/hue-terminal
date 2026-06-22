@@ -59,7 +59,7 @@ export function FleetTable({
                 onClick={() => onSelect(t)}
                 className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:border-white/5 dark:hover:bg-white/5"
               >
-                <td className="px-4 py-2.5">
+                <td className="whitespace-nowrap px-4 py-2.5">
                   <p className="font-medium text-gray-900 dark:text-zinc-200">{t.id}</p>
                   <p className="text-xs text-gray-400 dark:text-zinc-500">
                     {t.store} · {t.city}
