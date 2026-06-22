@@ -13,14 +13,27 @@ function Card({ label, value, sub, dot }: { label: string; value: string | numbe
   );
 }
 
-export function FleetSummaryCards({ summary }: { summary: FleetResponse['summary'] }) {
+interface Props {
+  summary: FleetResponse['summary'];
+  avgActive?: { active: number; total: number; days: number };
+}
+
+export function FleetSummaryCards({ summary, avgActive }: Props) {
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
       <Card label="Terminals" value={summary.total} sub="in fleet" dot="#6366f1" />
       <Card label="Online" value={summary.online} sub="synced < 15 min" dot="#10b981" />
       <Card label="Syncing" value={summary.syncing} sub="pushing batch now" dot="#3b82f6" />
       <Card label="Needs attn." value={summary.needsAttention} sub="retrying / offline" dot="#f97316" />
       <Card label="Buffered" value={summary.buffered.toLocaleString()} sub="unsynced records" dot="#a78bfa" />
+      {avgActive && (
+        <Card
+          label="Avg. Active"
+          value={`${avgActive.active} / ${avgActive.total}`}
+          sub={`avg over ${avgActive.days}d`}
+          dot="#14b8a6"
+        />
+      )}
     </div>
   );
 }

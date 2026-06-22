@@ -1,9 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { TERMINALS, generateRange, parseLocalDate } = require('./data');
+const { TERMINALS, TERMINAL_META, LOCATIONS, generateRange, resolveScope, parseLocalDate } = require('./data');
 const { detectAnomalies } = require('./anomaly');
-const { generateFleet } = require('./fleet');
+const { generateFleet, generateFleetHistory } = require('./fleet');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -12,7 +12,11 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/api/terminals', (_req, res) => {
-  res.json({ terminals: TERMINALS });
+  res.json({ terminals: TERMINALS, meta: TERMINAL_META });
+});
+
+app.get('/api/locations', (_req, res) => {
+  res.json({ locations: LOCATIONS });
 });
 
 function summarize(latest) {
@@ -33,11 +37,11 @@ function summarize(latest) {
 
 app.get('/api/transactions', (req, res) => {
   const days = Math.min(90, Math.max(1, Number(req.query.days) || 14));
-  const terminal = TERMINALS.includes(req.query.terminal) ? req.query.terminal : 'ALL';
+  const { label: scope } = resolveScope(req.query.terminal);
   const endDate = req.query.date ? parseLocalDate(req.query.date) : new Date();
   const compare = ['week', 'month'].includes(req.query.compare) ? req.query.compare : null;
 
-  const rows = generateRange(days, terminal, endDate);
+  const rows = generateRange(days, scope, endDate);
   const withAnomalies = detectAnomalies(rows);
 
   const latest = withAnomalies[withAnomalies.length - 1];
@@ -48,12 +52,12 @@ app.get('/api/transactions', (req, res) => {
     const shiftDays = compare === 'week' ? 7 : 30;
     const priorEnd = new Date(endDate);
     priorEnd.setDate(priorEnd.getDate() - shiftDays);
-    priorRows = generateRange(days, terminal, priorEnd);
+    priorRows = generateRange(days, scope, priorEnd);
   }
 
   res.json({
     syncedAt: new Date().toISOString(),
-    terminal,
+    terminal: scope,
     days,
     summary: summarize(latest),
     previousSummary: summarize(previous),
@@ -65,7 +69,15 @@ app.get('/api/transactions', (req, res) => {
 
 app.get('/api/fleet', (req, res) => {
   const endDate = req.query.date ? parseLocalDate(req.query.date) : new Date();
-  res.json({ syncedAt: new Date().toISOString(), ...generateFleet(endDate) });
+  const city = LOCATIONS.includes(req.query.city) ? req.query.city : undefined;
+  res.json({ syncedAt: new Date().toISOString(), ...generateFleet(endDate, city) });
+});
+
+app.get('/api/fleet/history', (req, res) => {
+  const days = Math.min(90, Math.max(1, Number(req.query.days) || 14));
+  const endDate = req.query.date ? parseLocalDate(req.query.date) : new Date();
+  const city = LOCATIONS.includes(req.query.city) ? req.query.city : undefined;
+  res.json({ syncedAt: new Date().toISOString(), ...generateFleetHistory(days, endDate, city) });
 });
 
 const clientDist = path.join(__dirname, '..', 'client', 'dist');

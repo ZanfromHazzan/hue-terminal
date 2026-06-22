@@ -17,12 +17,16 @@ function pickStatus(rand) {
   return 'online';
 }
 
-function generateFleet(date) {
+function terminalsForCity(city) {
+  return city ? TERMINAL_META.filter((t) => t.city === city) : TERMINAL_META;
+}
+
+function generateFleet(date, city) {
   const today = new Date(date);
   today.setHours(0, 0, 0, 0);
   const key = dateKey(today);
 
-  const terminals = TERMINAL_META.map((meta) => {
+  const terminals = terminalsForCity(city).map((meta) => {
     const seed = today.getTime() / 86400000 + hashString(meta.id) * 5417;
     const rand = seededRandom(Math.floor(seed));
 
@@ -54,7 +58,12 @@ function generateFleet(date) {
     };
   });
 
-  const summary = terminals.reduce(
+  const summary = summarize(terminals);
+  return { date: key, summary, terminals };
+}
+
+function summarize(terminals) {
+  return terminals.reduce(
     (acc, t) => {
       acc.total += 1;
       if (t.status === 'online') acc.online += 1;
@@ -65,8 +74,30 @@ function generateFleet(date) {
     },
     { total: 0, online: 0, syncing: 0, needsAttention: 0, buffered: 0 }
   );
-
-  return { date: key, summary, terminals };
 }
 
-module.exports = { generateFleet };
+// Daily fleet summaries across a window, plus the average count of active
+// (online or syncing) terminals per day — used for the fleet history metric.
+function generateFleetHistory(days, endDate, city) {
+  const today = endDate ? new Date(endDate) : new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const days_ = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const { date, summary } = generateFleet(d, city);
+    days_.push({ date, active: summary.online + summary.syncing, total: summary.total, summary });
+  }
+
+  const avgActive = days_.reduce((sum, d) => sum + d.active, 0) / days_.length;
+  const avgTotal = days_.reduce((sum, d) => sum + d.total, 0) / days_.length;
+
+  return {
+    days: days_,
+    avgActive: Number(avgActive.toFixed(1)),
+    avgTotal: Number(avgTotal.toFixed(1)),
+  };
+}
+
+module.exports = { generateFleet, generateFleetHistory };

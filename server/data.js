@@ -8,6 +8,7 @@ const TERMINAL_META = [
 ];
 
 const TERMINALS = ['ALL', ...TERMINAL_META.map((t) => t.id)];
+const LOCATIONS = [...new Set(TERMINAL_META.map((t) => t.city))];
 
 function seededRandom(seed) {
   let s = seed;
@@ -37,6 +38,19 @@ function hashString(s) {
     h = (h * 31 + s.charCodeAt(i)) % 1000003;
   }
   return h;
+}
+
+// A "scope" is either 'ALL', 'CITY:<name>', or a specific terminal id.
+// Resolves to the set of terminal ids it covers plus the label to report back.
+function resolveScope(scope) {
+  if (scope && scope.startsWith('CITY:')) {
+    const city = scope.slice(5);
+    const ids = TERMINAL_META.filter((t) => t.city === city).map((t) => t.id);
+    if (ids.length > 0) return { ids, label: scope };
+  } else if (scope && TERMINAL_META.some((t) => t.id === scope)) {
+    return { ids: [scope], label: scope };
+  }
+  return { ids: TERMINAL_META.map((t) => t.id), label: 'ALL' };
 }
 
 // Deterministic mock data generator: same date+terminal always yields the same numbers,
@@ -74,7 +88,8 @@ function generateDay(date, terminal) {
   };
 }
 
-function generateRange(days, terminal, endDate) {
+function generateRange(days, scope, endDate) {
+  const { ids, label } = resolveScope(scope);
   const rows = [];
   const today = endDate ? new Date(endDate) : new Date();
   today.setHours(0, 0, 0, 0);
@@ -83,30 +98,41 @@ function generateRange(days, terminal, endDate) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
 
-    if (terminal === 'ALL') {
-      const dayRows = TERMINAL_META.map((t) => generateDay(d, t.id));
-      const merged = dayRows.reduce(
-        (acc, r) => ({
-          date: r.date,
-          terminal: 'ALL',
-          attempts: acc.attempts + r.attempts,
-          upstream: acc.upstream + r.upstream,
-          successful: acc.successful + r.successful,
-          customerErrors: acc.customerErrors + r.customerErrors,
-          systemErrors: acc.systemErrors + r.systemErrors,
-          localOnly: acc.localOnly + r.localOnly,
-        }),
-        { attempts: 0, upstream: 0, successful: 0, customerErrors: 0, systemErrors: 0, localOnly: 0 }
-      );
-      merged.successRatePct = Number(((merged.successful / merged.attempts) * 100).toFixed(1));
-      merged.upstreamRatePct = Number(((merged.upstream / merged.attempts) * 100).toFixed(1));
-      rows.push(merged);
-    } else {
-      rows.push(generateDay(d, terminal));
+    if (ids.length === 1) {
+      rows.push(generateDay(d, ids[0]));
+      continue;
     }
+
+    const dayRows = ids.map((id) => generateDay(d, id));
+    const merged = dayRows.reduce(
+      (acc, r) => ({
+        date: r.date,
+        terminal: label,
+        attempts: acc.attempts + r.attempts,
+        upstream: acc.upstream + r.upstream,
+        successful: acc.successful + r.successful,
+        customerErrors: acc.customerErrors + r.customerErrors,
+        systemErrors: acc.systemErrors + r.systemErrors,
+        localOnly: acc.localOnly + r.localOnly,
+      }),
+      { attempts: 0, upstream: 0, successful: 0, customerErrors: 0, systemErrors: 0, localOnly: 0 }
+    );
+    merged.successRatePct = Number(((merged.successful / merged.attempts) * 100).toFixed(1));
+    merged.upstreamRatePct = Number(((merged.upstream / merged.attempts) * 100).toFixed(1));
+    rows.push(merged);
   }
 
   return rows;
 }
 
-module.exports = { TERMINALS, TERMINAL_META, generateRange, seededRandom, dateKey, hashString, parseLocalDate };
+module.exports = {
+  TERMINALS,
+  TERMINAL_META,
+  LOCATIONS,
+  generateRange,
+  resolveScope,
+  seededRandom,
+  dateKey,
+  hashString,
+  parseLocalDate,
+};

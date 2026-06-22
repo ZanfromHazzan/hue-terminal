@@ -5,8 +5,8 @@ import { SummaryCards } from '../components/SummaryCards';
 import { TrendChart } from '../components/TrendChart';
 import { TransactionsTable } from '../components/TransactionsTable';
 import { AnomalyBanner } from '../components/AnomalyBanner';
-import { fetchTransactions, fetchTerminals } from '../api';
-import type { ErrorFilter, TransactionsResponse } from '../types';
+import { fetchTransactions, fetchTerminals, fetchLocations } from '../api';
+import type { ErrorFilter, TerminalMeta, TransactionsResponse } from '../types';
 
 function recentDates(n: number) {
   const dates: string[] = [];
@@ -23,28 +23,30 @@ function recentDates(n: number) {
 export function TransactionsPage() {
   const dates = recentDates(30);
   const [days, setDays] = useState(14);
-  const [terminal, setTerminal] = useState('ALL');
+  const [scope, setScope] = useState('ALL');
   const [errorFilter, setErrorFilter] = useState<ErrorFilter>('all');
   const [selectedDate, setSelectedDate] = useState(dates[dates.length - 1]);
-  const [terminals, setTerminals] = useState<string[]>(['ALL']);
+  const [terminalMeta, setTerminalMeta] = useState<TerminalMeta[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
   const [data, setData] = useState<TransactionsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTerminals().then(setTerminals).catch(() => {});
+    fetchTerminals().then((res) => setTerminalMeta(res.meta)).catch(() => {});
+    fetchLocations().then(setLocations).catch(() => {});
   }, []);
 
   useEffect(() => {
     setLoading(true);
-    fetchTransactions(days, terminal, selectedDate)
+    fetchTransactions(days, scope, selectedDate)
       .then((res) => {
         setData(res);
         setError(null);
       })
       .catch(() => setError('Could not load transaction data.'))
       .finally(() => setLoading(false));
-  }, [days, terminal, selectedDate]);
+  }, [days, scope, selectedDate]);
 
   return (
     <div className="space-y-5">
@@ -61,9 +63,10 @@ export function TransactionsPage() {
         <Filters
           days={days}
           setDays={setDays}
-          terminal={terminal}
-          setTerminal={setTerminal}
-          terminals={terminals}
+          scope={scope}
+          setScope={setScope}
+          terminalMeta={terminalMeta}
+          locations={locations}
           errorFilter={errorFilter}
           setErrorFilter={setErrorFilter}
         />

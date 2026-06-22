@@ -58,15 +58,37 @@ export interface FleetTerminal {
   valueNairaToday: number;
 }
 
+export interface FleetSummary {
+  total: number;
+  online: number;
+  syncing: number;
+  needsAttention: number;
+  buffered: number;
+}
+
 export interface FleetResponse {
   syncedAt: string;
   date: string;
-  summary: {
-    total: number;
-    online: number;
-    syncing: number;
-    needsAttention: number;
-    buffered: number;
-  };
+  summary: FleetSummary;
   terminals: FleetTerminal[];
+}
+
+export interface FleetHistoryDay {
+  date: string;
+  active: number;
+  total: number;
+  summary: FleetSummary;
+}
+
+export interface FleetHistoryResponse {
+  syncedAt: string;
+  days: FleetHistoryDay[];
+  avgActive: number;
+  avgTotal: number;
+}
+
+export interface TerminalMeta {
+  id: string;
+  city: string;
+  store: string;
 }
