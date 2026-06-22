@@ -1,4 +1,13 @@
-const TERMINALS = ['ALL', 'TERM-001', 'TERM-002', 'TERM-003', 'TERM-004'];
+const TERMINAL_META = [
+  { id: 'TRM-LAG-0421', city: 'Lagos', store: 'ShopRite, Lekki' },
+  { id: 'TRM-LAG-0388', city: 'Lagos', store: 'Mobil Filling Stn, Ikeja' },
+  { id: 'TRM-ABV-0212', city: 'Abuja', store: 'Sahad Stores, Wuse II' },
+  { id: 'TRM-PHC-0150', city: 'Port Harcourt', store: 'SPAR, GRA Phase 2' },
+  { id: 'TRM-IBA-0067', city: 'Ibadan', store: 'Grand Mall, Ring Road' },
+  { id: 'TRM-KAN-0039', city: 'Kano', store: 'Ado Bayero Mall, Nassarawa' },
+];
+
+const TERMINALS = ['ALL', ...TERMINAL_META.map((t) => t.id)];
 
 function seededRandom(seed) {
   let s = seed;
@@ -9,13 +18,31 @@ function seededRandom(seed) {
 }
 
 function dateKey(d) {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// Parses a 'YYYY-MM-DD' string as local midnight, avoiding the UTC-parse-then-
+// convert-to-local rollback that `new Date(str)` causes in negative UTC offsets.
+function parseLocalDate(s) {
+  const [y, m, day] = s.split('-').map(Number);
+  return new Date(y, m - 1, day);
+}
+
+function hashString(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) % 1000003;
+  }
+  return h;
 }
 
 // Deterministic mock data generator: same date+terminal always yields the same numbers,
 // so filtering/re-fetching is stable instead of jittering on every request.
 function generateDay(date, terminal) {
-  const seed = date.getTime() / 86400000 + terminal.length * 7919;
+  const seed = date.getTime() / 86400000 + hashString(terminal) * 7919;
   const rand = seededRandom(Math.floor(seed));
 
   const baseAttempts = 1400 + Math.floor(rand() * 600);
@@ -47,9 +74,9 @@ function generateDay(date, terminal) {
   };
 }
 
-function generateRange(days, terminal) {
+function generateRange(days, terminal, endDate) {
   const rows = [];
-  const today = new Date();
+  const today = endDate ? new Date(endDate) : new Date();
   today.setHours(0, 0, 0, 0);
 
   for (let i = days - 1; i >= 0; i--) {
@@ -57,7 +84,7 @@ function generateRange(days, terminal) {
     d.setDate(d.getDate() - i);
 
     if (terminal === 'ALL') {
-      const dayRows = TERMINALS.filter((t) => t !== 'ALL').map((t) => generateDay(d, t));
+      const dayRows = TERMINAL_META.map((t) => generateDay(d, t.id));
       const merged = dayRows.reduce(
         (acc, r) => ({
           date: r.date,
@@ -82,4 +109,4 @@ function generateRange(days, terminal) {
   return rows;
 }
 
-module.exports = { TERMINALS, generateRange };
+module.exports = { TERMINALS, TERMINAL_META, generateRange, seededRandom, dateKey, hashString, parseLocalDate };
