@@ -24,7 +24,13 @@ function lastSyncLabel(t: FleetTerminal) {
   return `${Math.floor(t.lastSyncMinutesAgo / 60)}h ${t.lastSyncMinutesAgo % 60}m ago`;
 }
 
-export function FleetTable({ terminals }: { terminals: FleetTerminal[] }) {
+export function FleetTable({
+  terminals,
+  onSelect,
+}: {
+  terminals: FleetTerminal[];
+  onSelect: (terminal: FleetTerminal) => void;
+}) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-900/60">
       <div className="border-b border-gray-200 px-4 py-3 dark:border-white/10">
@@ -48,7 +54,11 @@ export function FleetTable({ terminals }: { terminals: FleetTerminal[] }) {
           </thead>
           <tbody>
             {terminals.map((t) => (
-              <tr key={t.id} className="border-b border-gray-100 last:border-0 dark:border-white/5">
+              <tr
+                key={t.id}
+                onClick={() => onSelect(t)}
+                className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:border-white/5 dark:hover:bg-white/5"
+              >
                 <td className="px-4 py-2.5">
                   <p className="font-medium text-gray-900 dark:text-zinc-200">{t.id}</p>
                   <p className="text-xs text-gray-400 dark:text-zinc-500">

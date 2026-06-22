@@ -4,7 +4,7 @@ import { SyncPolicyBanner } from '../components/SyncPolicyBanner';
 import { FleetSummaryCards } from '../components/FleetSummaryCards';
 import { FleetTable } from '../components/FleetTable';
 import { fetchFleet } from '../api';
-import type { FleetResponse } from '../types';
+import type { FleetResponse, FleetTerminal } from '../types';
 
 function recentDates(n: number) {
   const dates: string[] = [];
@@ -18,7 +18,7 @@ function recentDates(n: number) {
   return dates;
 }
 
-export function FleetPage() {
+export function FleetPage({ onSelectTerminal }: { onSelectTerminal: (terminal: FleetTerminal) => void }) {
   const dates = recentDates(14);
   const [selectedDate, setSelectedDate] = useState(dates[dates.length - 1]);
   const [data, setData] = useState<FleetResponse | null>(null);
@@ -48,7 +48,7 @@ export function FleetPage() {
       ) : data ? (
         <>
           <FleetSummaryCards summary={data.summary} />
-          <FleetTable terminals={data.terminals} />
+          <FleetTable terminals={data.terminals} onSelect={onSelectTerminal} />
         </>
       ) : null}
     </div>
