@@ -6,7 +6,7 @@ import { TrendChart } from '../components/TrendChart';
 import { TransactionsTable } from '../components/TransactionsTable';
 import { AnomalyBanner } from '../components/AnomalyBanner';
 import { fetchTransactions, fetchTerminals } from '../api';
-import type { ComparePeriod, TransactionsResponse } from '../types';
+import type { ErrorFilter, TransactionsResponse } from '../types';
 
 function recentDates(n: number) {
   const dates: string[] = [];
@@ -24,8 +24,8 @@ export function TransactionsPage() {
   const dates = recentDates(30);
   const [days, setDays] = useState(14);
   const [terminal, setTerminal] = useState('ALL');
+  const [errorFilter, setErrorFilter] = useState<ErrorFilter>('all');
   const [selectedDate, setSelectedDate] = useState(dates[dates.length - 1]);
-  const [compare, setCompare] = useState<ComparePeriod>('week');
   const [terminals, setTerminals] = useState<string[]>(['ALL']);
   const [data, setData] = useState<TransactionsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,14 +37,14 @@ export function TransactionsPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetchTransactions(days, terminal, selectedDate, compare)
+    fetchTransactions(days, terminal, selectedDate)
       .then((res) => {
         setData(res);
         setError(null);
       })
       .catch(() => setError('Could not load transaction data.'))
       .finally(() => setLoading(false));
-  }, [days, terminal, selectedDate, compare]);
+  }, [days, terminal, selectedDate]);
 
   return (
     <div className="space-y-5">
@@ -58,7 +58,15 @@ export function TransactionsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-gray-700 dark:text-zinc-300">{days}-day window</h3>
-        <Filters days={days} setDays={setDays} terminal={terminal} setTerminal={setTerminal} terminals={terminals} />
+        <Filters
+          days={days}
+          setDays={setDays}
+          terminal={terminal}
+          setTerminal={setTerminal}
+          terminals={terminals}
+          errorFilter={errorFilter}
+          setErrorFilter={setErrorFilter}
+        />
       </div>
 
       {error && (
@@ -72,8 +80,8 @@ export function TransactionsPage() {
       ) : data ? (
         <>
           <AnomalyBanner count={data.anomalyCount} />
-          <SummaryCards summary={data.summary} previous={data.previousSummary} />
-          <TrendChart rows={data.rows} priorRows={data.priorRows} compare={compare} onCompareChange={setCompare} />
+          <SummaryCards summary={data.summary} />
+          <TrendChart rows={data.rows} errorFilter={errorFilter} />
           <TransactionsTable rows={data.rows} />
         </>
       ) : null}

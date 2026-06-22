@@ -1,14 +1,24 @@
+import type { ErrorFilter } from '../types';
+
 interface Props {
   days: number;
   setDays: (d: number) => void;
   terminal: string;
   setTerminal: (t: string) => void;
   terminals: string[];
+  errorFilter: ErrorFilter;
+  setErrorFilter: (f: ErrorFilter) => void;
 }
 
 const DAY_OPTIONS = [7, 14, 30, 60];
+const ERROR_OPTIONS: { value: ErrorFilter; label: string }[] = [
+  { value: 'all', label: 'All errors' },
+  { value: 'customer', label: 'Customer errors' },
+  { value: 'system', label: 'System errors' },
+  { value: 'local', label: 'Local-only' },
+];
 
-export function Filters({ days, setDays, terminal, setTerminal, terminals }: Props) {
+export function Filters({ days, setDays, terminal, setTerminal, terminals, errorFilter, setErrorFilter }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1 dark:bg-zinc-900/60 dark:ring-1 dark:ring-white/10">
@@ -35,6 +45,18 @@ export function Filters({ days, setDays, terminal, setTerminal, terminals }: Pro
         {terminals.map((t) => (
           <option key={t} value={t}>
             {t === 'ALL' ? 'All terminals' : t}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={errorFilter}
+        onChange={(e) => setErrorFilter(e.target.value as ErrorFilter)}
+        className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-200"
+      >
+        {ERROR_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
           </option>
         ))}
       </select>
