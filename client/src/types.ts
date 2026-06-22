@@ -92,3 +92,5 @@ export interface TerminalMeta {
   city: string;
   store: string;
 }
+
+export type Tab = 'transactions' | 'fleet' | 'compare';

@@ -1,16 +1,18 @@
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
+import type { Tab } from '../types';
 
 interface Props {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
-  activeTab: 'transactions' | 'fleet';
-  onTabChange: (tab: 'transactions' | 'fleet') => void;
+  activeTab: Tab;
+  onTabChange: (tab: Tab) => void;
 }
 
-const TABS: { key: 'transactions' | 'fleet'; label: string }[] = [
+const TABS: { key: Tab; label: string }[] = [
   { key: 'transactions', label: 'Transaction Overview' },
   { key: 'fleet', label: 'Terminal Sync & Status' },
+  { key: 'compare', label: 'Compare & Correlate' },
 ];
 
 export function Header({ theme, onToggleTheme, activeTab, onTabChange }: Props) {

@@ -3,15 +3,16 @@ import { Header } from './components/Header';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { FleetPage } from './pages/FleetPage';
 import { TerminalDetailPage } from './pages/TerminalDetailPage';
+import { ComparePage } from './pages/ComparePage';
 import { useTheme } from './useTheme';
-import type { FleetTerminal } from './types';
+import type { FleetTerminal, Tab } from './types';
 
 export default function App() {
   const { theme, toggleTheme } = useTheme();
-  const [tab, setTab] = useState<'transactions' | 'fleet'>('transactions');
+  const [tab, setTab] = useState<Tab>('transactions');
   const [selectedTerminal, setSelectedTerminal] = useState<FleetTerminal | null>(null);
 
-  function handleTabChange(next: 'transactions' | 'fleet') {
+  function handleTabChange(next: Tab) {
     setSelectedTerminal(null);
     setTab(next);
   }
@@ -25,8 +26,10 @@ export default function App() {
           <TerminalDetailPage terminal={selectedTerminal} onBack={() => setSelectedTerminal(null)} />
         ) : tab === 'transactions' ? (
           <TransactionsPage />
-        ) : (
+        ) : tab === 'fleet' ? (
           <FleetPage onSelectTerminal={setSelectedTerminal} />
+        ) : (
+          <ComparePage />
         )}
       </main>
     </div>
