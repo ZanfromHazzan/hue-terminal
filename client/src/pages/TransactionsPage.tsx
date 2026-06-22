@@ -5,6 +5,7 @@ import { SummaryCards } from '../components/SummaryCards';
 import { TrendChart } from '../components/TrendChart';
 import { TransactionsTable } from '../components/TransactionsTable';
 import { AnomalyBanner } from '../components/AnomalyBanner';
+import { InsightBanner } from '../components/InsightBanner';
 import { fetchTransactions, fetchTerminals, fetchLocations } from '../api';
 import type { ErrorFilter, TerminalMeta, TransactionsResponse } from '../types';
 
@@ -83,6 +84,7 @@ export function TransactionsPage() {
       ) : data ? (
         <>
           <AnomalyBanner count={data.anomalyCount} />
+          <InsightBanner days={days} scope={scope} date={selectedDate} />
           <SummaryCards summary={data.summary} />
           <TrendChart rows={data.rows} errorFilter={errorFilter} />
           <TransactionsTable rows={data.rows} />

@@ -94,3 +94,12 @@ export interface TerminalMeta {
 }
 
 export type Tab = 'transactions' | 'fleet' | 'compare';
+
+export type InsightSeverity = 'info' | 'warning' | 'critical';
+
+export interface Insight {
+  available: boolean;
+  reason?: string;
+  severity?: InsightSeverity;
+  message?: string;
+}
