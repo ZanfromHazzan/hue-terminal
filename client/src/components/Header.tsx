@@ -9,10 +9,10 @@ interface Props {
   onTabChange: (tab: Tab) => void;
 }
 
+// 'compare' tab is temporarily hidden — page and routing stay intact, just not linked in nav.
 const TABS: { key: Tab; label: string }[] = [
   { key: 'transactions', label: 'Transaction Overview' },
   { key: 'fleet', label: 'Terminal Sync & Status' },
-  { key: 'compare', label: 'Compare & Correlate' },
 ];
 
 export function Header({ theme, onToggleTheme, activeTab, onTabChange }: Props) {
