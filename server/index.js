@@ -74,15 +74,42 @@ app.get('/api/transactions', (req, res) => {
 });
 
 const insightCache = new Map();
-const INSIGHT_TTL_MS = 5 * 60 * 1000;
+// Matches the scheduled refresh interval below, so a pre-warmed insight stays
+// served from cache for the full gap between scheduled regenerations.
+const INSIGHT_TTL_MS = 6 * 60 * 60 * 1000;
+
+function insightCacheKey(scope, days, date) {
+  return `${scope}:${days || 14}:${date || 'latest'}`;
+}
+
+async function refreshInsight({ scope, days, date }) {
+  const rows = generateRange(days, scope, date ? parseLocalDate(date) : new Date());
+  const withAnomalies = detectAnomalies(rows);
+  const latest = withAnomalies[withAnomalies.length - 1];
+  const previous = withAnomalies[withAnomalies.length - 2];
+
+  const insight = await generateInsight({
+    scope,
+    summary: summarize(latest),
+    previousSummary: summarize(previous),
+    rows: withAnomalies,
+  });
+  insightCache.set(insightCacheKey(scope, days, date), { expires: Date.now() + INSIGHT_TTL_MS, data: insight });
+  return insight;
+}
 
 app.get('/api/insights', async (req, res) => {
   const { scope, rows, latest, previous } = loadScopeWindow(req);
-  const cacheKey = `${scope}:${req.query.days || 14}:${req.query.date || 'latest'}`;
+  const days = req.query.days || 14;
+  const date = req.query.date;
+  const cacheKey = insightCacheKey(scope, days, date);
+  const force = req.query.force === '1';
 
-  const cached = insightCache.get(cacheKey);
-  if (cached && cached.expires > Date.now()) {
-    return res.json(cached.data);
+  if (!force) {
+    const cached = insightCache.get(cacheKey);
+    if (cached && cached.expires > Date.now()) {
+      return res.json(cached.data);
+    }
   }
 
   try {
@@ -99,6 +126,20 @@ app.get('/api/insights', async (req, res) => {
     res.json({ available: false, reason: 'Insight generation failed' });
   }
 });
+
+// Pre-warm the default dashboard view's insight on a schedule, so it's ready in
+// cache before anyone opens the page rather than generated live on first load.
+const INSIGHT_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
+function scheduleInsightRefresh() {
+  const defaults = { scope: 'ALL', days: 14, date: undefined };
+  refreshInsight(defaults).catch((err) => console.error('Scheduled insight refresh failed:', err.message));
+  setInterval(() => {
+    refreshInsight(defaults).catch((err) => console.error('Scheduled insight refresh failed:', err.message));
+  }, INSIGHT_REFRESH_INTERVAL_MS);
+}
+if (process.env.ANTHROPIC_API_KEY) {
+  scheduleInsightRefresh();
+}
 
 app.get('/api/fleet', (req, res) => {
   const endDate = req.query.date ? parseLocalDate(req.query.date) : new Date();

@@ -2,34 +2,26 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import { Filters } from '../components/Filters';
 import { SummaryCards } from '../components/SummaryCards';
+import { FailureComposition } from '../components/FailureComposition';
 import { TrendChart } from '../components/TrendChart';
 import { TransactionsTable } from '../components/TransactionsTable';
 import { AnomalyBanner } from '../components/AnomalyBanner';
 import { InsightBanner } from '../components/InsightBanner';
+import { ExportCsvButton } from '../components/ExportCsvButton';
 import { fetchTransactions, fetchTerminals, fetchLocations } from '../api';
-import type { ErrorFilter, TerminalMeta, TransactionsResponse } from '../types';
-
-function recentDates(n: number) {
-  const dates: string[] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().slice(0, 10));
-  }
-  return dates;
-}
+import { recentDates } from '../dateUtils';
+import type { ComparePeriod, DayRow, TerminalMeta, TransactionsResponse } from '../types';
 
 export function TransactionsPage() {
   const dates = recentDates(30);
   const [days, setDays] = useState(14);
   const [scope, setScope] = useState('ALL');
-  const [errorFilter, setErrorFilter] = useState<ErrorFilter>('all');
+  const [comparePeriod, setComparePeriod] = useState<ComparePeriod>('none');
   const [selectedDate, setSelectedDate] = useState(dates[dates.length - 1]);
   const [terminalMeta, setTerminalMeta] = useState<TerminalMeta[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
   const [data, setData] = useState<TransactionsResponse | null>(null);
+  const [last14, setLast14] = useState<DayRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,14 +32,22 @@ export function TransactionsPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetchTransactions(days, scope, selectedDate)
+    fetchTransactions(days, scope, selectedDate, comparePeriod)
       .then((res) => {
         setData(res);
         setError(null);
       })
       .catch(() => setError('Could not load transaction data.'))
       .finally(() => setLoading(false));
-  }, [days, scope, selectedDate]);
+  }, [days, scope, selectedDate, comparePeriod]);
+
+  // Fixed 14-day window for the KPI cards' WoW delta + sparkline, independent of
+  // whatever range is currently selected for the trend chart/table.
+  useEffect(() => {
+    fetchTransactions(14, scope, selectedDate)
+      .then((res) => setLast14(res.rows))
+      .catch(() => {});
+  }, [scope, selectedDate]);
 
   return (
     <div className="space-y-5">
@@ -68,8 +68,6 @@ export function TransactionsPage() {
           setScope={setScope}
           terminalMeta={terminalMeta}
           locations={locations}
-          errorFilter={errorFilter}
-          setErrorFilter={setErrorFilter}
         />
       </div>
 
@@ -85,8 +83,17 @@ export function TransactionsPage() {
         <>
           <AnomalyBanner count={data.anomalyCount} />
           <InsightBanner days={days} scope={scope} date={selectedDate} />
-          <SummaryCards summary={data.summary} />
-          <TrendChart rows={data.rows} errorFilter={errorFilter} />
+          <SummaryCards rows={data.rows} last14={last14} />
+          <FailureComposition rows={data.rows} />
+          <TrendChart
+            rows={data.rows}
+            priorRows={data.priorRows}
+            comparePeriod={comparePeriod}
+            onComparePeriodChange={setComparePeriod}
+          />
+          <div className="flex justify-end">
+            <ExportCsvButton rows={data.rows} filename={`omnipay-${scope}-${data.rows[0]?.date}_to_${selectedDate}.csv`} />
+          </div>
           <TransactionsTable rows={data.rows} />
         </>
       ) : null}

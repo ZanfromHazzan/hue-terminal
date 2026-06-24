@@ -37,7 +37,6 @@ export interface TransactionsResponse {
   anomalyCount: number;
 }
 
-export type ErrorFilter = 'all' | 'customer' | 'system' | 'local';
 export type SortKey = keyof Pick<
   DayRow,
   'date' | 'attempts' | 'successRatePct' | 'upstreamRatePct' | 'customerErrors' | 'systemErrors' | 'localOnly'

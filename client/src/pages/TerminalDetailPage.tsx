@@ -1,51 +1,42 @@
 import { useEffect, useState } from 'react';
 import { SummaryCards } from '../components/SummaryCards';
+import { FailureComposition } from '../components/FailureComposition';
 import { TrendChart } from '../components/TrendChart';
 import { TransactionsTable } from '../components/TransactionsTable';
 import { AnomalyBanner } from '../components/AnomalyBanner';
+import { ExportCsvButton } from '../components/ExportCsvButton';
 import { DateSelector } from '../components/DateSelector';
 import { DayRangeToggle } from '../components/DayRangeToggle';
 import { fetchTransactions } from '../api';
-import type { ErrorFilter, FleetTerminal, TransactionsResponse } from '../types';
-
-function recentDates(n: number) {
-  const dates: string[] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().slice(0, 10));
-  }
-  return dates;
-}
-
-const ERROR_OPTIONS: { value: ErrorFilter; label: string }[] = [
-  { value: 'all', label: 'All errors' },
-  { value: 'customer', label: 'Customer errors' },
-  { value: 'system', label: 'System errors' },
-  { value: 'local', label: 'Local-only' },
-];
+import { recentDates } from '../dateUtils';
+import type { ComparePeriod, DayRow, FleetTerminal, TransactionsResponse } from '../types';
 
 export function TerminalDetailPage({ terminal, onBack }: { terminal: FleetTerminal; onBack: () => void }) {
   const dates = recentDates(30);
   const [days, setDays] = useState(14);
-  const [errorFilter, setErrorFilter] = useState<ErrorFilter>('all');
+  const [comparePeriod, setComparePeriod] = useState<ComparePeriod>('none');
   const [selectedDate, setSelectedDate] = useState(dates[dates.length - 1]);
   const [data, setData] = useState<TransactionsResponse | null>(null);
+  const [last14, setLast14] = useState<DayRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetchTransactions(days, terminal.id, selectedDate)
+    fetchTransactions(days, terminal.id, selectedDate, comparePeriod)
       .then((res) => {
         setData(res);
         setError(null);
       })
       .catch(() => setError('Could not load transaction data.'))
       .finally(() => setLoading(false));
-  }, [days, terminal.id, selectedDate]);
+  }, [days, terminal.id, selectedDate, comparePeriod]);
+
+  useEffect(() => {
+    fetchTransactions(14, terminal.id, selectedDate)
+      .then((res) => setLast14(res.rows))
+      .catch(() => {});
+  }, [terminal.id, selectedDate]);
 
   return (
     <div className="space-y-5">
@@ -71,20 +62,7 @@ export function TerminalDetailPage({ terminal, onBack }: { terminal: FleetTermin
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-gray-700 dark:text-zinc-300">{days}-day window</h3>
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <DayRangeToggle days={days} setDays={setDays} />
-          <select
-            value={errorFilter}
-            onChange={(e) => setErrorFilter(e.target.value as ErrorFilter)}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-200"
-          >
-            {ERROR_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <DayRangeToggle days={days} setDays={setDays} />
       </div>
 
       {error && (
@@ -98,8 +76,17 @@ export function TerminalDetailPage({ terminal, onBack }: { terminal: FleetTermin
       ) : data ? (
         <>
           <AnomalyBanner count={data.anomalyCount} />
-          <SummaryCards summary={data.summary} />
-          <TrendChart rows={data.rows} errorFilter={errorFilter} />
+          <SummaryCards rows={data.rows} last14={last14} />
+          <FailureComposition rows={data.rows} />
+          <TrendChart
+            rows={data.rows}
+            priorRows={data.priorRows}
+            comparePeriod={comparePeriod}
+            onComparePeriodChange={setComparePeriod}
+          />
+          <div className="flex justify-end">
+            <ExportCsvButton rows={data.rows} filename={`${terminal.id}-${data.rows[0]?.date}_to_${selectedDate}.csv`} />
+          </div>
           <TransactionsTable rows={data.rows} />
         </>
       ) : null}

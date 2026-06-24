@@ -5,6 +5,7 @@ import { CompareTable } from '../components/CompareTable';
 import { CompareChart } from '../components/CompareChart';
 import { CorrelationMatrix } from '../components/CorrelationMatrix';
 import { fetchTransactions, fetchLocations, fetchTerminals } from '../api';
+import { yesterdayKey } from '../dateUtils';
 import type { ComparePeriod, DayRow, Summary, TerminalMeta } from '../types';
 
 interface EntityResult {
@@ -48,7 +49,7 @@ export function ComparePage() {
     setLoading(true);
     Promise.all(
       selected.map((scope) =>
-        fetchTransactions(days, scope, undefined, comparePeriod).then((res) => ({
+        fetchTransactions(days, scope, yesterdayKey(), comparePeriod).then((res) => ({
           label: scope.startsWith('CITY:') ? scope.slice(5) : scope,
           scope,
           summary: res.summary,

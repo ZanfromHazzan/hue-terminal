@@ -7,19 +7,8 @@ import { LocationFilter } from '../components/LocationFilter';
 import { SearchInput } from '../components/SearchInput';
 import { DayRangeToggle } from '../components/DayRangeToggle';
 import { fetchFleet, fetchFleetHistory, fetchLocations } from '../api';
+import { recentDates } from '../dateUtils';
 import type { FleetResponse, FleetHistoryResponse, FleetTerminal } from '../types';
-
-function recentDates(n: number) {
-  const dates: string[] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().slice(0, 10));
-  }
-  return dates;
-}
 
 function matchesSearch(t: FleetTerminal, query: string) {
   const q = query.trim().toLowerCase();

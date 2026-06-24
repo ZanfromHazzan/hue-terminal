@@ -53,9 +53,10 @@ export async function fetchFleetHistory(days: number, date?: string, city?: stri
   return res.json();
 }
 
-export async function fetchInsight(days: number, terminal: string, date?: string): Promise<Insight> {
+export async function fetchInsight(days: number, terminal: string, date?: string, force = false): Promise<Insight> {
   const params = new URLSearchParams({ days: String(days), terminal });
   if (date) params.set('date', date);
+  if (force) params.set('force', '1');
   const res = await fetch(`/api/insights?${params.toString()}`);
   if (!res.ok) throw new Error(`Request failed: ${res.status}`);
   return res.json();
