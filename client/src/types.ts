@@ -50,7 +50,7 @@ export interface FleetTerminal {
   id: string;
   city: string;
   store: string;
-  status: 'online' | 'syncing' | 'retrying' | 'offline';
+  status: 'online' | 'retrying' | 'offline';
   buffered: number;
   lastSyncMinutesAgo: number;
   attempts: number;
@@ -61,7 +61,6 @@ export interface FleetTerminal {
 export interface FleetSummary {
   total: number;
   online: number;
-  syncing: number;
   needsAttention: number;
   buffered: number;
 }

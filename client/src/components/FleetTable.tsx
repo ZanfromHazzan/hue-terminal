@@ -2,14 +2,12 @@ import type { FleetTerminal } from '../types';
 
 const STATUS_STYLES: Record<FleetTerminal['status'], string> = {
   online: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  syncing: 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
   retrying: 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400',
   offline: 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400',
 };
 
 const STATUS_LABEL: Record<FleetTerminal['status'], string> = {
   online: 'Online',
-  syncing: 'Syncing',
   retrying: 'Retrying',
   offline: 'Offline',
 };
@@ -19,7 +17,6 @@ function nairaFormat(n: number) {
 }
 
 function lastSyncLabel(t: FleetTerminal) {
-  if (t.status === 'syncing') return 'syncing now…';
   if (t.lastSyncMinutesAgo < 60) return `${t.lastSyncMinutesAgo} min ago`;
   return `${Math.floor(t.lastSyncMinutesAgo / 60)}h ${t.lastSyncMinutesAgo % 60}m ago`;
 }

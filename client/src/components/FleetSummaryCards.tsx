@@ -20,10 +20,9 @@ interface Props {
 
 export function FleetSummaryCards({ summary, avgActive }: Props) {
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
       <Card label="Terminals" value={summary.total} sub="in fleet" dot="#6366f1" />
       <Card label="Online" value={summary.online} sub="synced < 15 min" dot="#10b981" />
-      <Card label="Syncing" value={summary.syncing} sub="pushing batch now" dot="#3b82f6" />
       <Card label="Needs attn." value={summary.needsAttention} sub="retrying / offline" dot="#f97316" />
       <Card label="Buffered" value={summary.buffered.toLocaleString()} sub="unsynced records" dot="#a78bfa" />
       {avgActive && (

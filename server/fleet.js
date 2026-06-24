@@ -1,8 +1,7 @@
 const { TERMINAL_META, generateRange, seededRandom, dateKey, hashString } = require('./data');
 
 const STATUS_WEIGHTS = [
-  { status: 'online', weight: 0.55 },
-  { status: 'syncing', weight: 0.2 },
+  { status: 'online', weight: 0.75 },
   { status: 'retrying', weight: 0.2 },
   { status: 'offline', weight: 0.05 },
 ];
@@ -39,7 +38,7 @@ function generateFleet(date, city) {
           : Math.floor(rand() * 35);
 
     const lastSyncMinutesAgo =
-      status === 'syncing' ? 0 : status === 'retrying' || status === 'offline' ? Math.floor(20 + rand() * 90) : Math.floor(rand() * 14) + 1;
+      status === 'retrying' || status === 'offline' ? Math.floor(20 + rand() * 90) : Math.floor(rand() * 14) + 1;
 
     const [dayStats] = generateRange(1, meta.id, today);
     const avgTicketNaira = 3500 + rand() * 8000;
@@ -67,17 +66,16 @@ function summarize(terminals) {
     (acc, t) => {
       acc.total += 1;
       if (t.status === 'online') acc.online += 1;
-      if (t.status === 'syncing') acc.syncing += 1;
       if (t.status === 'retrying' || t.status === 'offline') acc.needsAttention += 1;
       acc.buffered += t.buffered;
       return acc;
     },
-    { total: 0, online: 0, syncing: 0, needsAttention: 0, buffered: 0 }
+    { total: 0, online: 0, needsAttention: 0, buffered: 0 }
   );
 }
 
-// Daily fleet summaries across a window, plus the average count of active
-// (online or syncing) terminals per day — used for the fleet history metric.
+// Daily fleet summaries across a window, plus the average count of online
+// terminals per day — used for the fleet history metric.
 function generateFleetHistory(days, endDate, city) {
   const today = endDate ? new Date(endDate) : new Date();
   today.setHours(0, 0, 0, 0);
@@ -87,7 +85,7 @@ function generateFleetHistory(days, endDate, city) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const { date, summary } = generateFleet(d, city);
-    days_.push({ date, active: summary.online + summary.syncing, total: summary.total, summary });
+    days_.push({ date, active: summary.online, total: summary.total, summary });
   }
 
   const avgActive = days_.reduce((sum, d) => sum + d.active, 0) / days_.length;
