@@ -30,15 +30,16 @@ function generateFleet(date, city) {
     const rand = seededRandom(Math.floor(seed));
 
     const status = pickStatus(rand);
-    const buffered =
-      status === 'retrying'
-        ? 50
-        : status === 'offline'
-          ? Math.floor(35 + rand() * 15)
-          : Math.floor(rand() * 35);
-
     const lastSyncMinutesAgo =
       status === 'retrying' || status === 'offline' ? Math.floor(20 + rand() * 90) : Math.floor(rand() * 14) + 1;
+
+    // Buffered records grow with how long the terminal has gone without a successful
+    // sync — roughly one 15-minute flush window's worth of records per missed interval.
+    const missedIntervals = Math.max(0, Math.floor(lastSyncMinutesAgo / 15));
+    const buffered =
+      status === 'retrying' || status === 'offline'
+        ? missedIntervals * Math.floor(8 + rand() * 12)
+        : Math.floor(rand() * 10);
 
     const [dayStats] = generateRange(1, meta.id, today);
     const avgTicketNaira = 3500 + rand() * 8000;

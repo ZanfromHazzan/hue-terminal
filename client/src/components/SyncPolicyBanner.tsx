@@ -5,9 +5,8 @@ export function SyncPolicyBanner() {
         <path d="M17.65 6.35A8 8 0 1019.5 13M19.5 13H15M19.5 13V8" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <p>
-        <strong>Sync policy:</strong> every <strong>15 min</strong>, or immediately once a terminal buffers{' '}
-        <strong>50 records</strong> — whichever comes first. Failed syncs retry with exponential backoff (max 5
-        min). Records are deleted locally only after a confirmed HTTP 200.
+        <strong>Sync policy:</strong> every <strong>15 min</strong>, the terminal flushes its local buffer to the
+        backend. Records are deleted locally only after a confirmed acknowledgement.
       </p>
     </div>
   );
